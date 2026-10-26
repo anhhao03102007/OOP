@@ -1,0 +1,29 @@
+# Qt / CMake
+build/
+build-*/
+cmake-build-*/
+CMakeLists.txt.user*
+*.pro.user*
+.qtcreator/
+*.autosave
+CMakeCache.txt
+CMakeFiles/
+
+# Bộ cài và file build (đưa lên Releases, không commit)
+dist/
+release/
+*.exe
+*.msi
+*.dmg
+*.AppImage
+*.zip
+
+# Khác
+node_modules/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local database credentials
+.env

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Đăng nhập OOPBank để quản lý tài chính và sử dụng dịch vụ ngân hàng số." />
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="loader.css" >
+    <title>Đăng nhập | OOPBank</title>
+  </head>
+  <body>
+    <div id="app-loader" role="status" aria-live="polite" aria-busy="true">
+  <div class="ld-box">
+    <div class="ld-mark">
+      <div class="ld-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#d4b996" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m3 9 9-6 9 6"/><path d="M5 9v10"/><path d="M10 9v10"/><path d="M14 9v10"/><path d="M19 9v10"/><path d="M3 21h18"/>
+        </svg>
+      </div>
+    </div>
+    <h1 class="ld-title">OOP <em>BANK</em></h1>
+    <p class="ld-status">Đang khởi động hệ thống…</p>
+    <div class="ld-bar"><span></span></div>
+  </div>
+  <script>
+    (function () {
+  var el = document.getElementById('app-loader');
+  if (!el) return;
+  var bar = el.querySelector('.ld-bar span');
+  var status = el.querySelector('.ld-status');
+  var steps = [
+    [15, 'Khởi động hệ thống…'],
+    [45, 'Kết nối dữ liệu…'],
+    [75, 'Tải giao diện…']
+  ];
+  var i = 0, done = false, start = Date.now(), MIN_SHOW = 1000; // hiện tối thiểu 0,8 giây để không nháy
+
+  function set(p, t) {
+    bar.style.width = p + '%';
+    if (t) status.textContent = t;
+  }
+  function next() {
+    if (done || i >= steps.length) return;
+    set(steps[i][0], steps[i][1]);
+    i++;
+    setTimeout(next, 700);
+  }
+  next();
+
+  // Gọi hàm này khi app đã sẵn sàng
+  window.hideAppLoader = function () {
+    if (done) return;
+    done = true;
+    var wait = Math.max(0, MIN_SHOW - (Date.now() - start));
+    setTimeout(function () {
+      set(100, 'Sẵn sàng');
+      setTimeout(function () {
+        el.classList.add('is-hidden');
+        el.setAttribute('aria-busy', 'false');
+        setTimeout(function () { el.remove(); }, 600);
+      }, 350);
+    }, wait);
+  };
+
+  // Mặc định: ẩn khi trang tải xong.
+  // Nếu muốn đợi QWebChannel kết nối xong, đặt window.APP_LOADER_MANUAL = true
+  // trước khi nạp file này, rồi gọi hideAppLoader() trong callback của QWebChannel.
+  window.addEventListener('load', function () {
+    if (!window.APP_LOADER_MANUAL) window.hideAppLoader();
+  });
+
+  // Phòng khi có lỗi: tự ẩn sau 15 giây để không kẹt màn hình loading
+  setTimeout(window.hideAppLoader, 15000);
+})();
+  </script>
+</div>
+    <div id="app"></div>
+    <script src="qwebchannel.js"></script>
+    <script>
+      globalThis.__OOPBANK_BRIDGES_READY__ = new Promise((resolve) => {
+        if (typeof QWebChannel === "undefined" || !globalThis.qt?.webChannelTransport) {
+          resolve();
+          return;
+        }
+        new QWebChannel(globalThis.qt.webChannelTransport, (channel) => {
+          globalThis.authBridge = channel.objects.authBridge ?? null;
+          globalThis.accountBridge = channel.objects.accountBridge ?? null;
+          globalThis.auditBridge = channel.objects.auditBridge ?? null;
+          globalThis.billBridge = channel.objects.billBridge ?? null;
+          globalThis.loanBridge = channel.objects.loanBridge ?? null;
+          globalThis.pageBridge = channel.objects.pageBridge ?? null;
+          globalThis.savingsBridge = channel.objects.savingsBridge ?? null;
+          globalThis.staffBridge = channel.objects.staffBridge ?? null;
+          globalThis.transactionBridge = channel.objects.transactionBridge ?? null;
+          globalThis.userBridge = channel.objects.userBridge ?? null;
+          globalThis.notificationBridge = channel.objects.notificationBridge ?? null;
+          resolve();
+        });
+      });
+    </script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
