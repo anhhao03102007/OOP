@@ -1,0 +1,28 @@
+/* Dán vào cuối UI_Frontend/style.css */
+#app-loader {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at top right, rgba(212, 185, 150, 0.32), transparent 48%), #f7f4ef;
+  color: #2c221e; font-family: inherit;
+  transition: opacity .5s ease, visibility .5s;
+}
+#app-loader.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.ld-box { width: min(22rem, 86vw); text-align: center; }
+.ld-mark { position: relative; display: grid; place-items: center; width: 5rem; height: 5rem; margin: 0 auto 1.5rem; }
+.ld-mark::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  border: 2px solid rgba(212, 185, 150, 0.6); border-top-color: #8b5e3c;
+  animation: ld-spin 1.1s linear infinite;
+}
+.ld-logo { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: #2c221e; }
+.ld-logo svg { width: 1.6rem; height: 1.6rem; }
+.ld-title { margin: 0; font: 600 1.75rem/1.2 Georgia, "Times New Roman", serif; letter-spacing: -0.02em; }
+.ld-title em { font-style: italic; color: #8b5e3c; }
+.ld-status { margin: 0.5rem 0 0; min-height: 1.25rem; font-size: 0.875rem; color: #685b53; }
+.ld-bar { margin-top: 1.5rem; height: 0.25rem; overflow: hidden; border-radius: 999px; background: rgba(212, 185, 150, 0.45); }
+.ld-bar span { display: block; width: 0; height: 100%; border-radius: inherit; background: #8b5e3c; transition: width .4s ease; }
+@keyframes ld-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ld-mark::before { animation: none; }
+  #app-loader, .ld-bar span { transition: none; }
+}
