@@ -1,0 +1,13 @@
+#include "bridge/CreditBridge.hpp"
+#include "services/CreditService.hpp"
+namespace Banking {
+CreditBridge::CreditBridge(CreditService& value,QObject* parent):QObject(parent),service(value){}
+QString CreditBridge::getMyAccount(const QString& raw){try{const auto j=json::parse(raw.toStdString());return QString::fromStdString(json(service.getMyAccount(j.value("session_token",""))).dump());}catch(...){return QString::fromStdString(json({{"success",false},{"message","Yêu cầu tài khoản tín dụng không hợp lệ."}}).dump());}}
+QString CreditBridge::getApplications(const QString& raw){try{return QString::fromStdString(json(service.getApplications(json::parse(raw.toStdString()).get<CreditApplicationsRequest>())).dump());}catch(...){return QString::fromStdString(json({{"success",false},{"message","Yêu cầu danh sách tín dụng không hợp lệ."}}).dump());}}
+QString CreditBridge::apply(const QString& raw){try{return QString::fromStdString(json(service.apply(json::parse(raw.toStdString()).get<CreditApplicationRequest>())).dump());}catch(...){return QString::fromStdString(json({{"success",false},{"message","Yêu cầu hạn mức không hợp lệ."}}).dump());}}
+QString CreditBridge::submitDocument(const QString& raw){try{return QString::fromStdString(json(service.submitDocument(json::parse(raw.toStdString()).get<CreditDocumentRequest>())).dump());}catch(...){return QString::fromStdString(json({{"success",false},{"message","Yêu cầu nộp giấy tờ tín dụng không hợp lệ."}}).dump());}}
+QString CreditBridge::reviewDocument(const QString& raw){try{return QString::fromStdString(json(service.reviewDocument(json::parse(raw.toStdString()).get<ReviewCreditDocumentRequest>())).dump());}catch(...){return QString::fromStdString(json({{"success",false},{"message","Yêu cầu duyệt giấy tờ tín dụng không hợp lệ."}}).dump());}}
+QString CreditBridge::decide(const QString& raw){try{return QString::fromStdString(json(service.decide(json::parse(raw.toStdString()).get<CreditDecisionRequest>())).dump());}catch(...){return QString::fromStdString(json({{"success",false},{"message","Quyết định tín dụng không hợp lệ."}}).dump());}}
+QString CreditBridge::spend(const QString& raw){try{return QString::fromStdString(json(service.spend(json::parse(raw.toStdString()).get<CreditActionRequest>())).dump());}catch(...){return QString::fromStdString(json({{"success",false},{"message","Yêu cầu chi tiêu tín dụng không hợp lệ."}}).dump());}}
+QString CreditBridge::repay(const QString& raw){try{return QString::fromStdString(json(service.repay(json::parse(raw.toStdString()).get<CreditActionRequest>())).dump());}catch(...){return QString::fromStdString(json({{"success",false},{"message","Yêu cầu trả nợ tín dụng không hợp lệ."}}).dump());}}
+}
