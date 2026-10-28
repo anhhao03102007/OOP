@@ -39,7 +39,8 @@ OOPBank là một dự án phần mềm ngân hàng dạng desktop, tích hợp 
 
 ### 🐷 2.5. Tiết kiệm và tài chính cá nhân
 - 📖 Mở sổ tiết kiệm có kỳ hạn
-- 💹 Quản lý lãi suất, ngày đáo hạn và tùy chọn tái tục
+- 💹 Kỳ hạn từ 1–3 tuần đến 60 tháng, lãi suất theo từng kỳ hạn từ 0,5% đến 6,5%/năm
+- 📅 Quản lý ngày đáo hạn và tùy chọn tái tục
 - 💰 Hỗ trợ rút tiền theo điều kiện hợp lệ
 
 ### 🛡️ 2.6. Hệ thống audit và bảo mật
@@ -159,6 +160,8 @@ Dự án sử dụng file `schema.sql` để khởi tạo cấu trúc cơ sở d
 - `idempotency_keys`
 
 > ⚠️ **Lưu ý:** file này phù hợp cho database mới hoặc môi trường phát triển ban đầu. Đối với môi trường production nên sử dụng migration quản lý phiên bản rõ ràng.
+
+Với database đã khởi tạo trước khi hỗ trợ kỳ hạn tiết kiệm theo tuần, áp dụng một lần `migrations/20261026_savings_term_days.sql` trước khi chạy phiên bản mới.
 
 ## 🔄 9. Quy trình sử dụng hệ thống
 

@@ -17,7 +17,8 @@ struct OpenSavingsRequest {
     std::string session_token;      // Token xác thực phiên đăng nhập
     std::string idempotency_key;    // Khóa chống gửi trùng lệnh giao dịch
     int64_t     amount_vnd = 0;     // Số tiền gửi gốc (Tối thiểu 1.000.000 VNĐ)
-    int         term_months = 6;    // Kỳ hạn (1, 3, 6, 12, 24 tháng)
+    int         term_months = 6;    // Kỳ hạn tháng; giữ 1 cho kỳ hạn tuần để tương thích schema cũ
+    int         term_days = 0;      // Kỳ hạn tuần lưu theo số ngày (7, 14 hoặc 21)
     std::string maturity_option;    // "RENEW_ALL", "RENEW_PRINCIPAL", "CLOSE_TO_ACCOUNT"
     std::string pin;                // Mã PIN 6 số xác thực giao dịch
     std::string target_user_id;
@@ -25,7 +26,7 @@ struct OpenSavingsRequest {
     std::string funding_method = "ACCOUNT"; // ACCOUNT hoặc COUNTER_CASH
     bool        kyc_verified = false; // Nhân viên xác nhận đã đối chiếu CCCD bản gốc
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(OpenSavingsRequest, session_token, idempotency_key, amount_vnd, term_months, maturity_option, pin, target_user_id, source_account_id, funding_method, kyc_verified)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(OpenSavingsRequest, session_token, idempotency_key, amount_vnd, term_months, term_days, maturity_option, pin, target_user_id, source_account_id, funding_method, kyc_verified)
 };
 
 // =========================================================================
@@ -60,13 +61,14 @@ struct SavingsDTO {
     int64_t     principal_vnd = 0;       // Số tiền gốc gửi (VNĐ)
     double      interest_rate = 0.0;     // Lãi suất %/năm (VD: 5.8)
     int         term_months = 0;         // Kỳ hạn gửi (tháng)
+    int         term_days = 0;           // Kỳ hạn gửi theo ngày; dùng cho kỳ hạn tuần
     int64_t     expected_interest_vnd = 0;// Lãi dự kiến thu được khi đúng hạn
     std::string maturity_option;         // Phương thức đáo hạn
     std::string status;                  // "ACTIVE", "CLOSED", "EARLY_WITHDRAWN"
     std::string start_date;              // Ngày mở sổ (ISO8601)
     std::string maturity_date;           // Ngày đáo hạn (ISO8601)
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(SavingsDTO, savings_id, user_id, source_account_id, principal_vnd, interest_rate, term_months, expected_interest_vnd, maturity_option, status, start_date, maturity_date)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(SavingsDTO, savings_id, user_id, source_account_id, principal_vnd, interest_rate, term_months, term_days, expected_interest_vnd, maturity_option, status, start_date, maturity_date)
 };
 
 // =========================================================================
