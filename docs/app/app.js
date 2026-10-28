@@ -672,7 +672,29 @@ function renderTransactionForm() {
     fields = formField("saving-amount", "Số tiền gửi (VNĐ)", "Tối thiểu 1.000.000", "wallet", "number") + `
       <div class="field">
         <label for="term">Kỳ hạn gửi</label>
-        <div class="input-wrap"><select id="term" name="term"><option value="3">3 tháng · 4,5%/năm</option><option value="6" selected>6 tháng · 5,8%/năm</option><option value="12">12 tháng · 6,1%/năm</option></select></div>
+        <div class="input-wrap"><select id="term" name="term">
+          <option value="W:1">1 tuần · 0,5%/năm</option>
+          <option value="W:2">2 tuần · 0,5%/năm</option>
+          <option value="W:3">3 tuần · 0,5%/năm</option>
+          <option value="M:1">1 tháng · 4,5%/năm</option>
+          <option value="M:2">2 tháng · 4,6%/năm</option>
+          <option value="M:3">3 tháng · 4,7%/năm</option>
+          <option value="M:4">4 tháng · 4,7%/năm</option>
+          <option value="M:5">5 tháng · 4,7%/năm</option>
+          <option value="M:6" selected>6 tháng · 5,3%/năm</option>
+          <option value="M:7">7 tháng · 5,3%/năm</option>
+          <option value="M:8">8 tháng · 5,3%/năm</option>
+          <option value="M:9">9 tháng · 5,3%/năm</option>
+          <option value="M:10">10 tháng · 5,3%/năm</option>
+          <option value="M:11">11 tháng · 5,3%/năm</option>
+          <option value="M:13">13 tháng · 5,85%/năm</option>
+          <option value="M:15">15 tháng · 5,85%/năm</option>
+          <option value="M:18">18 tháng · 5,85%/năm</option>
+          <option value="M:24">24 tháng · 6,5%/năm</option>
+          <option value="M:36">36 tháng · 6,5%/năm</option>
+          <option value="M:48">48 tháng · 6,5%/năm</option>
+          <option value="M:60">60 tháng · 6,5%/năm</option>
+        </select></div>
       </div>
       <div class="field">
         <label for="maturity-option">Phương thức đáo hạn</label>
@@ -718,7 +740,7 @@ function renderTransactionForm() {
       <span class="eyebrow">Sổ tiết kiệm đang hoạt động</span>
       ${state.savings.filter((item) => item.status === "ACTIVE").map((item) => `
         <div class="row">
-          <div class="info"><p>${escHtml(item.savings_id)}</p><small>${vnd(item.principal_vnd)} · ${item.term_months} tháng · ${item.interest_rate}%/năm</small></div>
+          <div class="info"><p>${escHtml(item.savings_id)}</p><small>${vnd(item.principal_vnd)} · ${item.term_days > 0 ? `${item.term_days / 7} tuần` : `${item.term_months} tháng`} · ${item.interest_rate}%/năm</small></div>
           <button class="secondary" type="button" data-action="close-savings-request" data-savings-id="${escHtml(item.savings_id)}">Tất toán</button>
         </div>`).join("") || `<p class="product-note">Chưa có sổ tiết kiệm đang hoạt động.</p>`}
     </div>` : "";
@@ -1711,11 +1733,15 @@ app.addEventListener("submit", async (event) => {
           bill_id: tx.data.bill_id,
         });
       } else if (tx.type === "savings") {
+        const [termUnit, termLength] = String(tx.data.term || "M:6").split(":");
+        const termValue = Number(termLength);
+        const isWeeklyTerm = termUnit === "W";
         operationResult = await callBackend("savingsBridge", "openSavings", {
           ...common,
           idempotency_key: tx.idempotencyKey,
           amount_vnd: tx.amount,
-          term_months: Number(tx.data.term || 6),
+          term_months: isWeeklyTerm ? 1 : termValue,
+          term_days: isWeeklyTerm ? termValue * 7 : 0,
           maturity_option: String(tx.data.maturity_option || "CLOSE_TO_ACCOUNT"),
         });
       } else if (tx.type === "CLOSE_SAVINGS") {

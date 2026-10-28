@@ -315,7 +315,7 @@ export function createStaff({ state, icons, icon, brand, render, loans: L, callB
     v: {
       CHECKING: { init: 0 },
       CREDIT: { limit: 10000000, income: 5000000, pinValid: false, file: null },
-      SAVINGS: { amount: 1000000, term: 6, maturity: "CLOSE_TO_ACCOUNT", funding: "ACCOUNT", pinValid: false },
+      SAVINGS: { amount: 1000000, term: "M:6", maturity: "CLOSE_TO_ACCOUNT", funding: "ACCOUNT", pinValid: false },
       LOAN: { amount: 10000000, term: 12, calc: "DECREASING", purpose: "", income: 0, collateral: "", pinValid: false, docs: {} },
     },
   });
@@ -332,7 +332,7 @@ export function createStaff({ state, icons, icon, brand, render, loans: L, callB
     if (o.type === "CHECKING") v.init = n("init");
     if (o.type === "SAVINGS") {
       v.amount = n("amount");
-      v.term = n("term_months");
+      v.term = String(d.get("term_months") || "");
       v.maturity = String(d.get("maturity_option") || "");
       v.funding = String(d.get("funding_method") || "ACCOUNT");
       v.pinValid = /^\d{6}$/.test(String(d.get("pin") || ""));
@@ -365,7 +365,7 @@ export function createStaff({ state, icons, icon, brand, render, loans: L, callB
       if (!person.acc || person.acc === "—") return "Khách hàng cần có tài khoản thanh toán đang hoạt động để mở sổ.";
       if (!Number.isSafeInteger(v.amount) || v.amount < 1000000) return "Số tiền gửi phải là số nguyên từ 1.000.000 ₫ trở lên.";
       if (v.funding === "ACCOUNT" && v.amount > person.bal) return "Số tiền gửi vượt số dư tài khoản thanh toán.";
-      if (![1, 3, 6, 12, 24].includes(v.term)) return "Kỳ hạn tiết kiệm không hợp lệ.";
+      if (!savingsTerms.some((term) => term.value === v.term)) return "Kỳ hạn tiết kiệm không hợp lệ.";
       if (!["RENEW_ALL", "RENEW_PRINCIPAL", "CLOSE_TO_ACCOUNT"].includes(v.maturity)) return "Chọn phương thức đáo hạn.";
       if (!v.pinValid) return "Cần nhập PIN giao dịch 6 số của khách hàng.";
     }
@@ -404,7 +404,8 @@ export function createStaff({ state, icons, icon, brand, render, loans: L, callB
     } else if (o.type === "SAVINGS") {
       x.bigLabel = "Số tiền gửi";
       x.big = `${money(v.amount)} ₫`;
-      x.rows = [["Kỳ hạn", `${v.term} tháng`], ["Nguồn tiền", v.funding === "COUNTER_CASH" ? "Tiền mặt tại quầy" : "Trích tài khoản"], ["Tài khoản nhận đáo hạn", person?.acc || "—"], ["Đáo hạn", ({ RENEW_ALL: "Tái tục gốc và lãi", RENEW_PRINCIPAL: "Tái tục gốc", CLOSE_TO_ACCOUNT: "Chuyển về tài khoản" })[v.maturity] || "—"]];
+      const selectedTerm = savingsTerms.find((term) => term.value === v.term);
+      x.rows = [["Kỳ hạn", selectedTerm ? `${selectedTerm.label} · ${selectedTerm.rate}%/năm` : "—"], ["Nguồn tiền", v.funding === "COUNTER_CASH" ? "Tiền mặt tại quầy" : "Trích tài khoản"], ["Tài khoản nhận đáo hạn", person?.acc || "—"], ["Đáo hạn", ({ RENEW_ALL: "Tái tục gốc và lãi", RENEW_PRINCIPAL: "Tái tục gốc", CLOSE_TO_ACCOUNT: "Chuyển về tài khoản" })[v.maturity] || "—"]];
       x.status = ["Cần PIN khách hàng", "warn"];
       x.submit = "Xác nhận mở sổ tiết kiệm";
     } else {
@@ -432,6 +433,14 @@ export function createStaff({ state, icons, icon, brand, render, loans: L, callB
     `<div class="field ${cls}"><label for="oa-${name}">${text}</label><div class="input-wrap"><input id="oa-${name}" name="${name}" type="number" min="0" step="100000" inputmode="numeric" placeholder="0" value="${val || ""}" /><span class="oa-unit">${unit}</span></div></div>`;
   const oaOpt = (name, value, text, checked, sub = "") =>
     `<label class="oa-opt"><input type="radio" name="${name}" value="${value}" ${checked ? "checked" : ""} /><span>${text}${sub ? `<small>${sub}</small>` : ""}</span></label>`;
+  const savingsTerms = [
+    ...[1, 2, 3].map((weeks) => ({ value: `W:${weeks}`, label: `${weeks} tuần`, months: 1, days: weeks * 7, rate: 0.5 })),
+    ...[
+      [1, 4.5], [2, 4.6], [3, 4.7], [4, 4.7], [5, 4.7],
+      [6, 5.3], [7, 5.3], [8, 5.3], [9, 5.3], [10, 5.3], [11, 5.3],
+      [13, 5.85], [15, 5.85], [18, 5.85], [24, 6.5], [36, 6.5], [48, 6.5], [60, 6.5],
+    ].map(([months, rate]) => ({ value: `M:${months}`, label: `${months} tháng`, months, days: 0, rate })),
+  ];
 
   function oaForm(o, person) {
     const v = o.v[o.type];
@@ -444,7 +453,9 @@ export function createStaff({ state, icons, icon, brand, render, loans: L, callB
         </div>`;
     }
     if (o.type === "SAVINGS") {
-      const termOptions = [1, 3, 6, 12, 24].map((months) => `<option value="${months}" ${v.term === months ? "selected" : ""}>${months} tháng</option>`).join("");
+      const termOptions = savingsTerms.map((term) =>
+        `<option value="${term.value}" ${v.term === term.value ? "selected" : ""}>${term.label} · ${term.rate}%/năm</option>`
+      ).join("");
       return `<h2 class="display">Mở sổ tiết kiệm</h2>
         <p class="product-note">Sổ đứng tên khách hàng. Có thể trích từ tài khoản hoặc nhận tiền mặt khách nộp tại quầy; tiền đáo hạn chuyển về tài khoản thanh toán đã chọn.</p>
         <div class="oa-grid">
@@ -531,12 +542,15 @@ export function createStaff({ state, icons, icon, brand, render, loans: L, callB
     if (type === "SAVINGS") {
       const form = document.querySelector("#open-account-form");
       const pin = String(new FormData(form).get("pin") || "");
+      const savingsTerm = savingsTerms.find((term) => term.value === v.term);
+      if (!savingsTerm) throw new Error("Kỳ hạn tiết kiệm không hợp lệ.");
       if (!s.oa.savingsIdempotencyKey) s.oa.savingsIdempotencyKey = numericIdempotencyKey("SAV");
       return callBackend("savingsBridge", "openSavings", {
         ...base,
         idempotency_key: s.oa.savingsIdempotencyKey,
         amount_vnd: v.amount,
-        term_months: v.term,
+        term_months: savingsTerm.months,
+        term_days: savingsTerm.days,
         maturity_option: v.maturity,
         funding_method: v.funding,
         pin,
@@ -839,7 +853,7 @@ export function createStaff({ state, icons, icon, brand, render, loans: L, callB
             ${fld("f-atm", "atm", "Phí rút ATM ngoại mạng (₫)", "3300", "number", s.fees.atm)}
           </div>
           ${fld("counter-limit", "counterLimit", "Hạn mức mỗi giao dịch tại quầy (₫)", "500000000", "number", s.fees.counterLimit)}
-          ${fld("f-rate", "rate", "Lãi suất tiết kiệm tối đa (%/năm)", "5.8", "number", s.fees.rate)}
+          ${fld("f-rate", "rate", "Lãi suất tiết kiệm tối đa (%/năm)", "6.5", "number", s.fees.rate)}
           <h3 class="display" style="font-size:1.3rem;margin-top:1.5rem">Tín dụng quay vòng</h3>
           <div class="form-grid">
             ${fld("credit-monthly-rate", "credit-monthly-rate", "Lãi suất tín dụng (%/tháng)", "2", "number", s.creditConfig.monthlyRate)}

@@ -152,6 +152,7 @@ CREATE TABLE IF NOT EXISTS savings_accounts (
     principal_vnd INTEGER NOT NULL CHECK (principal_vnd >= 1000000),
     interest_rate REAL NOT NULL CHECK (interest_rate >= 0),
     term_months INTEGER NOT NULL CHECK (term_months > 0),
+    term_days INTEGER NOT NULL DEFAULT 0 CHECK (term_days >= 0),
     maturity_option TEXT NOT NULL CHECK (
         maturity_option IN ('RENEW_ALL', 'RENEW_PRINCIPAL', 'CLOSE_TO_ACCOUNT')
     ),

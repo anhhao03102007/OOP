@@ -23,7 +23,8 @@ TermSavingsAccount SavingsRepository::mapRowToModel(const json& r) {
         extractCell(r[9]),                             // maturityDate
         extractCell(r[6]),                             // option
         extractCell(r[7]),                             // status
-        extractCell(r[10])                             // createdAt
+        extractCell(r[10]),                            // createdAt
+        std::stoi(extractCell(r[11]))                  // termDays
     );
 }
 
@@ -31,7 +32,7 @@ TermSavingsAccount SavingsRepository::mapRowToModel(const json& r) {
 std::optional<TermSavingsAccount> SavingsRepository::findById(const std::string& savingsId) {
     std::string sql = 
         "SELECT savings_id, user_id, source_account_id, principal_vnd, interest_rate, "
-        "term_months, maturity_option, status, start_date, maturity_date, created_at "
+        "term_months, maturity_option, status, start_date, maturity_date, created_at, term_days "
         "FROM savings_accounts WHERE savings_id = ? LIMIT 1;";
 
     json args = json::array({{{"type", "text"}, {"value", savingsId}}});
@@ -53,7 +54,7 @@ SavingsBook SavingsRepository::findSavingsBookByUserId(const std::string& userId
     SavingsBook book(userId);
     std::string sql = 
         "SELECT savings_id, user_id, source_account_id, principal_vnd, interest_rate, "
-        "term_months, maturity_option, status, start_date, maturity_date, created_at "
+        "term_months, maturity_option, status, start_date, maturity_date, created_at, term_days "
         "FROM savings_accounts WHERE user_id = ?";
 
     json args = json::array({{{"type", "text"}, {"value", userId}}});
@@ -73,7 +74,7 @@ SavingsBook SavingsRepository::findSavingsBookByUserId(const std::string& userId
     const auto& rows = res["results"][0]["response"]["result"]["rows"];
     if (!rows.is_array()) throw std::runtime_error("Database trả về danh sách sổ tiết kiệm không hợp lệ.");
     for (const auto& row : rows) {
-        if (!row.is_array() || row.size() < 11) {
+        if (!row.is_array() || row.size() < 12) {
             throw std::runtime_error("Bản ghi sổ tiết kiệm không đầy đủ.");
         }
         book.addAccount(mapRowToModel(row));

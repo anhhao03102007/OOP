@@ -54,7 +54,7 @@ qt_add_executable(BankingSystem
 )
 
 # Give the desktop application a stable output filename.
-set_target_properties(BankingSystem PROPERTIES OUTPUT_NAME "OOPBank-Desktop")
+set_target_properties(BankingSystem PROPERTIES OUTPUT_NAME "OOPBANK-APP_DESKTOP")
 if(WIN32)
     # Build as a Windows GUI application so launching the EXE doesn't open a console window.
     set_target_properties(BankingSystem PROPERTIES WIN32_EXECUTABLE TRUE)

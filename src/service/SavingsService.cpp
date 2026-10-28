@@ -20,13 +20,25 @@ double readSavingsRateCap(TursoDB& database) {
         json::array({{{"type", "text"}, {"value", "admin.savings_max_rate_percent"}}}));
     try {
         const auto cell = response["results"][0]["response"]["result"]["rows"][0][0];
-        if (!cell.is_object() || !cell.contains("value") || cell["value"].is_null()) return 5.8;
+        if (!cell.is_object() || !cell.contains("value") || cell["value"].is_null()) return 6.5;
         const auto& value = cell["value"];
         const double rate = std::stod(value.is_string() ? value.get<std::string>() : value.dump());
-        return rate >= 0.0 && rate <= 50.0 ? rate : 5.8;
+        return rate >= 0.0 && rate <= 50.0 ? rate : 6.5;
     } catch (...) {
-        return 5.8;
+        return 6.5;
     }
+}
+
+double savingsProductRate(int termMonths, int termDays) {
+    if (termDays == 7 || termDays == 14 || termDays == 21) return 0.5;
+    if (termDays != 0) return 0.0;
+    if (termMonths == 1) return 4.5;
+    if (termMonths == 2) return 4.6;
+    if (termMonths >= 3 && termMonths <= 5) return 4.7;
+    if (termMonths >= 6 && termMonths <= 11) return 5.3;
+    if (termMonths == 13 || termMonths == 15 || termMonths == 18) return 5.85;
+    if (termMonths == 24 || termMonths == 36 || termMonths == 48 || termMonths == 60) return 6.5;
+    return 0.0;
 }
 
 } // namespace
@@ -107,7 +119,9 @@ SavingsOperationResult SavingsService::openSavings(const OpenSavingsRequest& req
         return res;
     }
 
-    if (req.amount_vnd < 1000000 || (req.term_months != 1 && req.term_months != 3 && req.term_months != 6 && req.term_months != 12 && req.term_months != 24)) {
+    const bool validTerm = (req.term_days == 0 && savingsProductRate(req.term_months, 0) > 0.0) ||
+                           ((req.term_months == 1) && savingsProductRate(0, req.term_days) > 0.0);
+    if (req.amount_vnd < 1000000 || !validTerm) {
         res.message = "Số tiền hoặc kỳ hạn gửi không hợp lệ.";
         return res;
     }
@@ -138,7 +152,7 @@ SavingsOperationResult SavingsService::openSavings(const OpenSavingsRequest& req
         return res;
     }
 
-    const double productRate = (req.term_months >= 12) ? 6.1 : (req.term_months >= 6 ? 5.8 : 4.5);
+    const double productRate = savingsProductRate(req.term_months, req.term_days);
     const double rate = std::min(productRate, readSavingsRateCap(m_tursoDb));
     std::string savingsId = "SAV_" + AuthSecurity::generateNumericCode(24);
 
@@ -180,18 +194,22 @@ SavingsOperationResult SavingsService::openSavings(const OpenSavingsRequest& req
     // Thêm sổ tiết kiệm mới
     std::string sqlInsert =
         "INSERT INTO savings_accounts (savings_id, user_id, source_account_id, principal_vnd, "
-        "interest_rate, term_months, maturity_option, status, start_date, maturity_date, created_at) "
-        "SELECT ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', CURRENT_TIMESTAMP, datetime(CURRENT_TIMESTAMP, '+' || ? || ' months'), CURRENT_TIMESTAMP "
+        "interest_rate, term_months, term_days, maturity_option, status, start_date, maturity_date, created_at) "
+        "SELECT ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', CURRENT_TIMESTAMP, datetime(CURRENT_TIMESTAMP, ?), CURRENT_TIMESTAMP "
         "WHERE changes() = 1;";
+    const int storedTermMonths = req.term_days > 0 ? 1 : req.term_months;
+    const std::string maturityModifier = "+" + std::to_string(req.term_days > 0 ? req.term_days : req.term_months) +
+                                         (req.term_days > 0 ? " days" : " months");
     json argsInsert = json::array({
         {{"type", "text"},    {"value", savingsId}},
         {{"type", "text"},    {"value", targetUserId}},
         {{"type", "text"},    {"value", sourceAccountId}},
         {{"type", "numeric"}, {"value", req.amount_vnd}},
         {{"type", "numeric"}, {"value", rate}},
-        {{"type", "numeric"}, {"value", req.term_months}},
+        {{"type", "numeric"}, {"value", storedTermMonths}},
+        {{"type", "numeric"}, {"value", req.term_days}},
         {{"type", "text"},    {"value", req.maturity_option}},
-        {{"type", "numeric"}, {"value", req.term_months}}
+        {{"type", "text"},    {"value", maturityModifier}}
     });
     batch.push_back({sqlInsert, argsInsert});
 
@@ -419,10 +437,13 @@ GetSavingsListResult SavingsService::getSavingsList(const GetSavingsListRequest&
         dto.principal_vnd = acc.getOriginalAmountVnd();
         dto.interest_rate = acc.getInterestRate();
         dto.term_months = acc.getTermMonths();
+        dto.term_days = acc.getTermDays();
         
-        // Tính toán lãi dự kiến khi đúng hạn: Gốc * (Lãi suất / 100) * (Số tháng / 12)
+        const double termYears = dto.term_days > 0
+            ? static_cast<double>(dto.term_days) / 365.0
+            : static_cast<double>(dto.term_months) / 12.0;
         dto.expected_interest_vnd = static_cast<int64_t>(
-            dto.principal_vnd * (dto.interest_rate / 100.0) * (dto.term_months / 12.0)
+            dto.principal_vnd * (dto.interest_rate / 100.0) * termYears
         );
         
         dto.maturity_option = acc.getMaturityOption();
